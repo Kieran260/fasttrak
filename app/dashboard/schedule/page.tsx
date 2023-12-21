@@ -104,8 +104,6 @@ export default function ScheduleDeliveries() {
     return true;
   };
 
-
-
   // Data
   const [deliverySchedules, setDeliverySchedules] = useState<DeliverySchedule[]>([]);
   const [reload, setReload] = useState(false);
@@ -193,12 +191,17 @@ export default function ScheduleDeliveries() {
 
     let deliverySchedule: DeliverySchedule[] = [];
     console.log("Scheduling for date:", date)
-    // schedule packages
-    if (vehicles && packages) {
-      deliverySchedule = await createSchedules(vehicles, packages, date);
-      console.log(deliverySchedule)
-    }
 
+    if (vehicles && packages) {
+      const schedule = await createSchedules(vehicles, packages, date);
+
+      if (schedule && schedule.length > 0) {
+        deliverySchedule = schedule as DeliverySchedule[];
+      }
+      console.log("Delivery Schedule output" + deliverySchedule)
+    }
+    
+    // TODO: Optimisation required
     if (deliverySchedule && deliverySchedule.length > 0) {
       for (const schedule in deliverySchedule) {
         let packageOrderIds = [];
@@ -236,6 +239,7 @@ export default function ScheduleDeliveries() {
           alert(error.message)
         } else {
           // If successfully scheduled, update scheduledPackageIds status to scheduled
+          console.log("Successfully scheduled")
           const { error } = await supabase
             .from('packages')
             .update({ status: 'Scheduled' })

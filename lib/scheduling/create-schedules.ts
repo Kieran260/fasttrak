@@ -6,7 +6,10 @@ import { geospatialClustering } from "../routing/algorithms/algorithm-3";
 import { Edge, Graph, Node, calculateDistance, createGraph } from "../routing/model/graph";
 import { VRPSolution, VehicleRoute } from "../routing/model/vrp";
 import { UUID } from "crypto";
+import axios from 'axios';
 
+// API Gateway endpoint URL
+const apiGatewayEndpoint = 'https://e266yv3o3eojn6auayc5za77c40pmdhb.lambda-url.eu-north-1.on.aws/';
 
 export async function createSchedules(vehiclesData: Vehicle[], packagesData: Package[], date: Date) {
     console.log("Scheduling packages...");
@@ -21,22 +24,36 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
     }
 
     // TODO: Get depot here, set to variable to be used in createGraph
-
     // Create a graph where each node represents a package, and each edge represents a delivery location
     // Nodes are connected to the depot node (depot node is the starting point and end point), and 5 nearest neighbors
-    const graph = await createGraph(packagesData, { lat: 53.403782, lng: -2.971970 }, true);
-
-    if (graph) {
-        console.log("Graph created successfully!");
-    } else {
-        console.error("Error creating graph!");
-    }
-
-    // number of packages:
-    console.log("Number of packages: " + graph.nodes.length);
 
     // Run the VRP algorithm to generate a solution
-    const vrpSolution = await geospatialClustering(graph, vehiclesData, 8);
+    //const vrpSolution = await geospatialClustering(graph, vehiclesData, 8);
+
+    // schedule packages on AWS Lambda
+    const data = {
+        packages: packagesData,
+        vehicles: vehiclesData,
+        timeWindow: 8
+    };
+
+    let vrpSolution = undefined as unknown as VRPSolution;
+    console.log("data: ", data);
+
+    // Make a POST request
+    await fetch(apiGatewayEndpoint, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })
+        .then(response => response.json())
+        .then(data => {
+            vrpSolution = data;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+
 
     // Initialize an empty array to hold delivery schedules for each vehicle
     let schedules: DeliverySchedule[] = [];
