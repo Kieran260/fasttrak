@@ -37,7 +37,8 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
         timeWindow: 8
     };
 
-    let vrpSolution = undefined as unknown as VRPSolution;
+    let vrpSolution = new VRPSolution();
+    console.log("Contents:", vrpSolution)
     console.log("data: ", data);
 
     // Make a POST request
@@ -48,12 +49,23 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
         .then(response => response.json())
         .then(data => {
             vrpSolution = data;
+            console.log("AWS Lambda Success!")
         })
         .catch(error => {
             console.error('Error:', error);
         });
 
-
+    // If Lambda request fails, run algorithm locally
+    // TODO: Add 30 second timeout for local processing
+    if (vrpSolution.routes.length === 0) {
+        const graph = await createGraph(packagesData, { lat: 53.403782, lng: -2.971970 }, true);
+        if (graph.nodes.length === 0) {
+            console.log("No packages to schedule.");
+            return;
+        }
+        vrpSolution = await geospatialClustering(graph, vehiclesData, 8)
+        console.log("scheduling locally")
+    }
 
     // Initialize an empty array to hold delivery schedules for each vehicle
     let schedules: DeliverySchedule[] = [];

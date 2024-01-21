@@ -8,8 +8,9 @@ import { DeliverySchedule, DeliveryStatus } from "@/types/delivery-schedule";
 import { supabase } from "@/pages/api/supabase-client";
 
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, Loader, Loader2, SeparatorHorizontal } from "lucide-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { cn } from "@/lib/utils/utils"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+import {
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+
+
 import { createSchedules } from "@/lib/scheduling/create-schedules";
 import { createGraphAndSolutionFromScheduleArray } from "@/lib/scheduling/schedules-to-graph";
 
@@ -35,9 +63,57 @@ import { displayGraph } from "@/lib/utils/cytoscape-data";
 import { CytoscapeGraph } from "@/components/CytoscapeGraph";
 import { MdRefresh } from "react-icons/md"
 import { useRouter, useSearchParams } from "next/navigation";
-
+import { ScheduleDialog } from "./components/create-schedule-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FaSpinner } from "react-icons/fa";
+import { Separator } from "@radix-ui/react-dropdown-menu";
+import { Select } from "@/components/ui/select";
+import { BiSolidTruck } from "react-icons/bi";
+import { PiPackageBold } from "react-icons/pi";
+import { Vehicle } from "@/types/vehicle";
+import { UUID } from "crypto";
 
 export default function ScheduleDeliveries() {
+  // Dialog
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [numPendingPackages, setNumPendingPackages] = useState<Number | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    // Assuming vehicles is the array of all vehicles
+    setSelectedVehicles(vehicles);
+  }, [vehicles]);
+
+  const handleCheckedChange = (vehicle: Vehicle, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedVehicles(prev => [...prev, vehicle]);
+    } else {
+      setSelectedVehicles(prev => prev.filter(v => v.vehicle_id !== vehicle.vehicle_id));
+    }
+  };
+
+  function getNumPendingPackages() {
+    db.packages.fetch.pending().then(packages => {
+      if (packages) {
+        setNumPendingPackages(packages.length);
+        console.log("numPendingPackages", packages.length)
+      }
+      getVehicles();
+    });
+
+  }
+
+  function getVehicles() {
+    db.vehicles.fetch.all().then(vehicles => {
+      if (vehicles) {
+        setVehicles(vehicles);
+        console.log("vehicles", vehicles)
+      }
+    });
+  }
+
   // Date Handling
   const [date, setDate] = useState<Date | null>(null);
   const router = useRouter();
@@ -88,7 +164,6 @@ export default function ScheduleDeliveries() {
     }
   };
 
-
   const isDateWithinLimit = (newDate: Date) => {
     const tomorrow = new Date();
     tomorrow.setDate(new Date().getDate() + 1);
@@ -119,10 +194,13 @@ export default function ScheduleDeliveries() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!date) return; // Return early if date is null
+      if (!date) {
+        console.log("no date"); // Return early if date is null
+        return
+      }
 
       setIsLoading(true); // Set loading to true when starting to fetch data
-      setInProgress(false); // Set default to true
+      setInProgress(false); // Set default to false
       setScheduleComplete(true); // Set default to true
 
       let schedules = await db.schedules.fetch.byDate(date);
@@ -200,7 +278,7 @@ export default function ScheduleDeliveries() {
       }
       console.log("Delivery Schedule output" + deliverySchedule)
     }
-    
+
     // TODO: Optimisation required
     if (deliverySchedule && deliverySchedule.length > 0) {
       for (const schedule in deliverySchedule) {
@@ -429,12 +507,94 @@ export default function ScheduleDeliveries() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div>
-                        <Button className="border"
-                          disabled={isLoading == true || date! < new Date((new Date()).valueOf() - 1000 * 3600 * 24) || date! < new Date("1900-01-01") || isScheduledToday != false}
-                          onClick={e => handleScheduleDelivery()}
-                        >
-                          Schedule
-                        </Button>
+                        <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button className="border hover:cursor-pointer"
+                              onClick={e => {
+                                getNumPendingPackages();
+                                setScheduleDialogOpen(true);
+                              }}
+                              disabled={isLoading == true || date! < new Date((new Date()).valueOf() - 1000 * 3600 * 24) || date! < new Date("1900-01-01") || isScheduledToday != false}
+                            >
+                              Schedule
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>New Schedule</DialogTitle>
+                              {date != null &&
+                                <DialogDescription>
+                                  Schedule for <b>{format(date, 'do MMMM yyyy') ?? ""}</b>
+                                </DialogDescription>
+                              }
+                            </DialogHeader>
+
+                            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-xs">
+                              <div className="flex text-sm items-center gap-2 justify-center sm:justify-start">
+                                <BiSolidTruck />
+                                {
+                                  numPendingPackages !== null && numPendingPackages !== undefined
+                                    ? `${vehicles.length} Available Vehicles`
+                                    : <div className="flex font-normal text-xs items-center mx-2 my-auto gap-2">
+                                      <Loader2 size={18} className="animate-spin" /> Loading...
+                                    </div>
+                                }
+                              </div>
+                              <div className="flex text-sm items-center gap-2 justify-center sm:justify-start">
+                                <PiPackageBold />
+                                {
+                                  numPendingPackages !== null && numPendingPackages !== undefined
+                                    ? `${numPendingPackages} Pending Packages`
+                                    : <div className="flex font-normal text-xs items-center mx-2 my-auto gap-2">
+                                      <Loader2 size={18} className="animate-spin" /> Loading...
+                                    </div>
+                                }
+                              </div>
+                            </div>
+
+                            <div className="w-full border-t" />
+
+                            <div className="flex justify-between gap-4">
+                              <Label className="my-auto justify-center line-clamp-1">Selected Vehicles</Label>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" className="ml-auto" disabled={vehicles.length === 0}>
+                                    {vehicles.length > 0 &&
+                                      <div className="line-clamp-1">{selectedVehicles.length} Selected</div>
+                                    }
+                                    {vehicles.length === 0 &&
+                                      <><Loader2 size={18} className="animate-spin mx-2" /> Loading...</>
+                                    }
+                                  </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end">
+
+                                    {vehicles.map((vehicle) => {
+                                      return (
+                                        <DropdownMenuCheckboxItem
+                                          key={vehicle.vehicle_id}
+                                          className="capitalize"
+                                          checked={selectedVehicles.some(v => v.vehicle_id === vehicle.vehicle_id)}
+                                          onCheckedChange={(value) => handleCheckedChange(vehicle, value)}
+                                          onSelect={(event) => event.preventDefault()}
+                                        >
+                                          {vehicle.registration}
+                                        </DropdownMenuCheckboxItem>
+                                      )
+                                    })}
+
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+
+
+                            <DialogFooter>
+                              <Button type="submit">Schedule</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
