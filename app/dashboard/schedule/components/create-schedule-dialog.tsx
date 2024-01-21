@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -21,13 +21,17 @@ import { BiSolidTruck } from "react-icons/bi";
 import { PiPackageBold } from "react-icons/pi";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from 'lucide-react';
+import { OptimisationProfile, ScheduleProfile } from '@/types/schedule-profile';
 
 interface ScheduleDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
     date: Date | null;
     vehicles: Vehicle[];
     selectedVehicles: Vehicle[];
     handleCheckedChange: (vehicle: Vehicle, isChecked: boolean) => void;
     numPendingPackages: Number | null;
+    handleScheduleDelivery: (profile: ScheduleProfile) => void;
 }
 
 export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
@@ -36,7 +40,37 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
     selectedVehicles,
     handleCheckedChange,
     numPendingPackages,
+    handleScheduleDelivery,
 }) => {
+
+    const [formFields, setFormFields] = useState({
+        optimisationProfile: 'Eco',
+        timeWindow: '8',
+        deliveryTime: '3',
+        driverBreak: '30',
+    });
+
+
+    const handleSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+
+
+        const scheduleProfile: ScheduleProfile = {
+            selected_vehicles: selectedVehicles,
+            optimisation_profile: formFields.optimisationProfile as OptimisationProfile,
+            time_window: parseInt(formFields.timeWindow),
+            delivery_time: parseInt(formFields.deliveryTime),
+            driver_break: parseInt(formFields.driverBreak),
+        };
+
+        console.log(scheduleProfile)
+
+
+        handleScheduleDelivery(scheduleProfile);
+    };
+
+
+
     return (
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -55,7 +89,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                         numPendingPackages !== null && numPendingPackages !== undefined
                             ? `${vehicles.length} Available Vehicles`
                             : <div className="flex font-normal text-xs items-center mx-2 my-auto gap-2">
-                                <Loader2 size={18} className="animate-spin" /> Loading...
+                                <Loader2 size={18} className="animate-spin" /> Loading Vehicles...
                             </div>
                     }
                 </div>
@@ -65,7 +99,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                         numPendingPackages !== null && numPendingPackages !== undefined
                             ? `${numPendingPackages} Pending Packages`
                             : <div className="flex font-normal text-xs items-center mx-2 my-auto gap-2">
-                                <Loader2 size={18} className="animate-spin" /> Loading...
+                                <Loader2 size={18} className="animate-spin" /> Loading Packages...
                             </div>
                     }
                 </div>
@@ -108,24 +142,25 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
 
             <div className="flex justify-between gap-4">
                 <Label className="my-auto justify-center line-clamp-1">Optimisation Profile</Label>
-                <Select>
+                <Select value={formFields.optimisationProfile}
+                    onValueChange={(e) => setFormFields({ ...formFields, optimisationProfile: e.valueOf() })}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select Profile" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
                             <SelectLabel>Optimisation</SelectLabel>
-                            <SelectItem value="eco">Eco Efficiency</SelectItem>
-                            <SelectItem value="space">Space Efficiency</SelectItem>
-                            <SelectItem value="time">Time Efficiency</SelectItem>
+                            <SelectItem value="Eco">Eco Efficiency</SelectItem>
+                            <SelectItem value="Space">Space Efficiency</SelectItem>
+                            <SelectItem value="Time">Time Efficiency</SelectItem>
                         </SelectGroup>
                     </SelectContent>
                 </Select>
             </div>
-
             <div className="flex justify-between gap-4">
                 <Label className="my-auto justify-center line-clamp-1">Time Window</Label>
-                <Select>
+                <Select value={formFields.timeWindow}
+                    onValueChange={(e) => setFormFields({ ...formFields, timeWindow: e.valueOf() })}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select Time" />
                     </SelectTrigger>
@@ -146,7 +181,8 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
 
             <div className="flex justify-between gap-4">
                 <Label className="my-auto justify-center line-clamp-1">Time Per Delivery</Label>
-                <Select>
+                <Select value={formFields.deliveryTime}
+                    onValueChange={(e) => setFormFields({ ...formFields, deliveryTime: e.valueOf() })}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select Time" />
                     </SelectTrigger>
@@ -165,7 +201,8 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
 
             <div className="flex justify-between gap-4">
                 <Label className="my-auto justify-center line-clamp-1">Driver Break</Label>
-                <Select>
+                <Select value={formFields.driverBreak}
+                    onValueChange={(e) => setFormFields({ ...formFields, driverBreak: e.valueOf() })}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select Time" />
                     </SelectTrigger>
@@ -181,7 +218,10 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             </div>
 
             <DialogFooter>
-                <Button type="submit">Schedule</Button>
+                <Button type="submit"
+                    onClick={e => handleSubmit(e)}>
+                    Schedule
+                </Button>
             </DialogFooter>
         </DialogContent>
     );

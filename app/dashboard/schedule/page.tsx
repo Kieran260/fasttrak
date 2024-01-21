@@ -73,6 +73,7 @@ import { BiSolidTruck } from "react-icons/bi";
 import { PiPackageBold } from "react-icons/pi";
 import { Vehicle } from "@/types/vehicle";
 import { UUID } from "crypto";
+import { ScheduleProfile } from "@/types/schedule-profile";
 
 export default function ScheduleDeliveries() {
   // Dialog
@@ -253,16 +254,19 @@ export default function ScheduleDeliveries() {
   }
 
   // Schedule
-  async function handleScheduleDelivery() {
+  async function handleScheduleDelivery(profile: ScheduleProfile) {
     if (!date) return; // Return early if date is null
     setIsLoading(true);
     setIsScheduling(true);
+    setScheduleDialogOpen(false); // Close the dialog
 
     // fetch vehicles
-    let vehicles = await db.vehicles.fetch.all();
+    //let vehicles = await db.vehicles.fetch.all();
+    let vehicles = profile.selected_vehicles;
     console.log(vehicles)
 
-    // fetch packages
+    // fetch packages 
+    // TODO add to local profile object to prevent re-fetching
     let packages = await db.packages.fetch.pending();
     console.log(packages)
 
@@ -330,6 +334,7 @@ export default function ScheduleDeliveries() {
     refreshData();
     setIsLoading(false);
     setIsScheduling(false);
+    
   }
 
   async function handleDeleteSchedule() {
@@ -517,7 +522,10 @@ export default function ScheduleDeliveries() {
                         </Button>
                       </DialogTrigger>
                       <ScheduleDialogContent
+                        open={scheduleDialogOpen}
+                        onOpenChange={setScheduleDialogOpen}
                         date={date}
+                        handleScheduleDelivery={handleScheduleDelivery}
                         vehicles={vehicles}
                         selectedVehicles={selectedVehicles}
                         handleCheckedChange={handleCheckedChange}
