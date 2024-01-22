@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -22,26 +22,97 @@ import { PiPackageBold } from "react-icons/pi";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from 'lucide-react';
 import { OptimisationProfile, ScheduleProfile } from '@/types/schedule-profile';
+import { MdError, MdInfoOutline } from 'react-icons/md';
+import { db } from '@/lib/db/db';
+import { HiLightningBolt } from 'react-icons/hi';
+import { FaLeaf } from 'react-icons/fa';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ScheduleDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     date: Date | null;
-    vehicles: Vehicle[];
-    selectedVehicles: Vehicle[];
-    handleCheckedChange: (vehicle: Vehicle, isChecked: boolean) => void;
-    numPendingPackages: Number | null;
     handleScheduleDelivery: (profile: ScheduleProfile) => void;
+    onReset: () => void;
 }
 
 export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
     date,
-    vehicles,
-    selectedVehicles,
-    handleCheckedChange,
-    numPendingPackages,
+    onOpenChange,
+    open,
     handleScheduleDelivery,
+    onReset,
 }) => {
+
+
+    const [numPendingPackages, setNumPendingPackages] = useState<Number | null>(null);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
+
+
+    const fetchData = async () => {
+        getNumPendingPackages();
+        getVehicles();
+    };
+
+    useEffect(() => {
+        if (open) {
+            fetchData();
+        } else {
+            // Delay the reset process by 200 ms
+            const timer = setTimeout(() => {
+                setNumPendingPackages(null);
+                setVehicles([]);
+                setSelectedVehicles([]);
+                setFormFields({
+                    optimisationProfile: 'Eco',
+                    timeWindow: '8',
+                    deliveryTime: '3',
+                    driverBreak: '30',
+                });
+            }, 200);
+
+            // Cleanup function to clear the timeout
+            return () => clearTimeout(timer);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        // Assuming vehicles is the array of all vehicles
+        setSelectedVehicles(vehicles);
+    }, [vehicles]);
+
+    const handleCheckedChange = (vehicle: Vehicle, isChecked: boolean) => {
+        if (isChecked) {
+            setSelectedVehicles(prev => [...prev, vehicle]);
+        } else {
+            setSelectedVehicles(prev => prev.filter(v => v.vehicle_id !== vehicle.vehicle_id));
+        }
+    };
+
+    function getNumPendingPackages() {
+        db.packages.fetch.pending().then(packages => {
+            if (packages) {
+                setNumPendingPackages(packages.length);
+                console.log("numPendingPackages", packages.length)
+            }
+            getVehicles();
+        });
+    }
+
+    function getVehicles() {
+        db.vehicles.fetch.all().then(vehicles => {
+            if (vehicles) {
+                setVehicles(vehicles);
+            }
+        });
+    }
+
 
     const [formFields, setFormFields] = useState({
         optimisationProfile: 'Eco',
@@ -49,6 +120,17 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
         deliveryTime: '3',
         driverBreak: '30',
     });
+
+    const isSubmitDisabled = () => {
+        return (
+            formFields.optimisationProfile === '' ||
+            formFields.timeWindow === '' ||
+            formFields.deliveryTime === '' ||
+            formFields.driverBreak === '' ||
+            selectedVehicles.length === 0 ||
+            (numPendingPackages !== null && Number(numPendingPackages) === 0)
+        );
+    };
 
 
     const handleSubmit = (event: React.FormEvent) => {
@@ -105,6 +187,19 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                 </div>
             </div>
 
+            {selectedVehicles.length === 0 && vehicles.length > 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
+                <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no vehicles selected</div>
+            }
+            {vehicles.length === 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
+                <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no vehicles available</div>
+            }
+            {numPendingPackages === 0 &&
+                <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no packages pending</div>
+            }
+
+
+
+
             <div className="w-full border-t" />
 
             <div className="flex justify-between gap-4">
@@ -141,7 +236,9 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             </div>
 
             <div className="flex justify-between gap-4">
-                <Label className="my-auto justify-center line-clamp-1">Optimisation Profile</Label>
+
+                <Label className="my-auto justify-center line-clamp-1 flex gap-1">Optimisation Profile</Label>
+
                 <Select value={formFields.optimisationProfile}
                     onValueChange={(e) => setFormFields({ ...formFields, optimisationProfile: e.valueOf() })}>
                     <SelectTrigger className="w-[180px]">
@@ -150,9 +247,9 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                     <SelectContent>
                         <SelectGroup>
                             <SelectLabel>Optimisation</SelectLabel>
-                            <SelectItem value="Eco">Eco Efficiency</SelectItem>
-                            <SelectItem value="Space">Space Efficiency</SelectItem>
-                            <SelectItem value="Time">Time Efficiency</SelectItem>
+                            <SelectItem value="Eco"><div className="flex items-center gap-2">Economical<FaLeaf className="text-primary" /></div></SelectItem>
+                            <SelectItem value="Space"><div className="flex items-center gap-2">Load Utilisation<PiPackageBold /></div></SelectItem>
+                            <SelectItem value="Time"><div className="flex items-center gap-2">Fastest Delivery<HiLightningBolt className="text-yellow-400" /></div></SelectItem>
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -219,7 +316,8 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
 
             <DialogFooter>
                 <Button type="submit"
-                    onClick={e => handleSubmit(e)}>
+                    onClick={e => handleSubmit(e)}
+                    disabled={isSubmitDisabled()}>
                     Schedule
                 </Button>
             </DialogFooter>
