@@ -78,41 +78,18 @@ import { ScheduleProfile } from "@/types/schedule-profile";
 export default function ScheduleDeliveries() {
   // Dialog
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [numPendingPackages, setNumPendingPackages] = useState<Number | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
+  const [dialogKey, setDialogKey] = useState(0);
 
-  useEffect(() => {
-    // Assuming vehicles is the array of all vehicles
-    setSelectedVehicles(vehicles);
-  }, [vehicles]);
-
-  const handleCheckedChange = (vehicle: Vehicle, isChecked: boolean) => {
-    if (isChecked) {
-      setSelectedVehicles(prev => [...prev, vehicle]);
-    } else {
-      setSelectedVehicles(prev => prev.filter(v => v.vehicle_id !== vehicle.vehicle_id));
-    }
-  };
-
-  function getNumPendingPackages() {
-    db.packages.fetch.pending().then(packages => {
-      if (packages) {
-        setNumPendingPackages(packages.length);
-        console.log("numPendingPackages", packages.length)
-      }
-      getVehicles();
-    });
-
+  const resetDialog = () => {
+    setDialogKey(prevKey => prevKey + 1);
   }
 
-  function getVehicles() {
-    db.vehicles.fetch.all().then(vehicles => {
-      if (vehicles) {
-        setVehicles(vehicles);
-      }
-    });
+  // When opening the dialog, reset the dialog state
+  const openDialog = () => {
+    resetDialog();
+    setScheduleDialogOpen(true);
   }
+
 
   // Date Handling
   const [date, setDate] = useState<Date | null>(null);
@@ -334,7 +311,7 @@ export default function ScheduleDeliveries() {
     refreshData();
     setIsLoading(false);
     setIsScheduling(false);
-    
+
   }
 
   async function handleDeleteSchedule() {
@@ -512,24 +489,19 @@ export default function ScheduleDeliveries() {
                     <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
                       <DialogTrigger asChild>
                         <Button className="border hover:cursor-pointer"
-                          onClick={e => {
-                            getNumPendingPackages();
-                            setScheduleDialogOpen(true);
-                          }}
+
                           disabled={date! < new Date((new Date()).valueOf() - 1000 * 3600 * 24) || date! < new Date("1900-01-01") || isScheduledToday != false || isLoading == true}
                         >
                           Schedule
                         </Button>
                       </DialogTrigger>
                       <ScheduleDialogContent
+                        key={dialogKey}
                         open={scheduleDialogOpen}
                         onOpenChange={setScheduleDialogOpen}
+                        onReset={resetDialog} // Pass the reset function
                         date={date}
                         handleScheduleDelivery={handleScheduleDelivery}
-                        vehicles={vehicles}
-                        selectedVehicles={selectedVehicles}
-                        handleCheckedChange={handleCheckedChange}
-                        numPendingPackages={numPendingPackages}
                       />
                     </Dialog>
                   </div>
