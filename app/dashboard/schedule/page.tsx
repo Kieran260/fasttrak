@@ -235,7 +235,7 @@ export default function ScheduleDeliveries() {
     if (!date) return; // Return early if date is null
     setIsLoading(true);
     setIsScheduling(true);
-    setScheduleDialogOpen(false); // Close the dialog
+
 
     // fetch vehicles
     //let vehicles = await db.vehicles.fetch.all();
@@ -311,7 +311,6 @@ export default function ScheduleDeliveries() {
     refreshData();
     setIsLoading(false);
     setIsScheduling(false);
-
   }
 
   async function handleDeleteSchedule() {
@@ -477,35 +476,40 @@ export default function ScheduleDeliveries() {
               </Tooltip>
 
               <div className="inline-flex">
-                {isScheduling == true &&
-                  <Button disabled className="border">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Scheduling
-                  </Button>
-                }
 
-                {isScheduling == false &&
-                  <div>
-                    <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="border hover:cursor-pointer"
 
-                          disabled={date! < new Date((new Date()).valueOf() - 1000 * 3600 * 24) || date! < new Date("1900-01-01") || isScheduledToday != false || isLoading == true}
-                        >
-                          Schedule
-                        </Button>
-                      </DialogTrigger>
-                      <ScheduleDialogContent
-                        key={dialogKey}
-                        open={scheduleDialogOpen}
-                        onOpenChange={setScheduleDialogOpen}
-                        onReset={resetDialog} // Pass the reset function
-                        date={date}
-                        handleScheduleDelivery={handleScheduleDelivery}
-                      />
-                    </Dialog>
-                  </div>
-                }
+
+                <div>
+                  <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+                    <DialogTrigger asChild>
+                      <>
+                        {isScheduling == false &&
+                          <Button className="border hover:cursor-pointer"
+                            onClick={e => setScheduleDialogOpen(true)}
+                            disabled={date! < new Date((new Date()).valueOf() - 1000 * 3600 * 24) || date! < new Date("1900-01-01") || isScheduledToday != false || isLoading == true}
+                          >
+                            Schedule
+                          </Button>
+                        }
+                        {isScheduling == true &&
+                          <Button disabled className="border">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Scheduling
+                          </Button>
+                        }
+                      </>
+                    </DialogTrigger>
+                    <ScheduleDialogContent
+                      key={dialogKey}
+                      open={scheduleDialogOpen}
+                      onOpenChange={setScheduleDialogOpen}
+                      onReset={resetDialog}
+                      date={date}
+                      handleScheduleDelivery={handleScheduleDelivery}
+                    />
+                  </Dialog>
+                </div>
+
               </div>
             </div>
           </div>

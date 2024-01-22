@@ -53,11 +53,22 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
     const [numPendingPackages, setNumPendingPackages] = useState<Number | null>(null);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
-
+    const [isScheduling, setIsScheduling] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const fetchData = async () => {
-        getNumPendingPackages();
-        getVehicles();
+        setIsLoading(true);
+
+        const vehicles = await db.vehicles.fetch.all()
+        const packages = await db.packages.fetch.pending()
+
+        if (vehicles && packages) {
+            setVehicles(vehicles);
+            setNumPendingPackages(packages.length);
+            setSelectedVehicles(vehicles);
+        }
+
+        setIsLoading(false);
     };
 
     useEffect(() => {
@@ -69,6 +80,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                 setNumPendingPackages(null);
                 setVehicles([]);
                 setSelectedVehicles([]);
+                setIsScheduling(false);
                 setFormFields({
                     optimisationProfile: 'Eco',
                     timeWindow: '8',
@@ -82,10 +94,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
         }
     }, [open]);
 
-    useEffect(() => {
-        // Assuming vehicles is the array of all vehicles
-        setSelectedVehicles(vehicles);
-    }, [vehicles]);
+
 
     const handleCheckedChange = (vehicle: Vehicle, isChecked: boolean) => {
         if (isChecked) {
@@ -94,25 +103,6 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             setSelectedVehicles(prev => prev.filter(v => v.vehicle_id !== vehicle.vehicle_id));
         }
     };
-
-    function getNumPendingPackages() {
-        db.packages.fetch.pending().then(packages => {
-            if (packages) {
-                setNumPendingPackages(packages.length);
-                console.log("numPendingPackages", packages.length)
-            }
-            getVehicles();
-        });
-    }
-
-    function getVehicles() {
-        db.vehicles.fetch.all().then(vehicles => {
-            if (vehicles) {
-                setVehicles(vehicles);
-            }
-        });
-    }
-
 
     const [formFields, setFormFields] = useState({
         optimisationProfile: 'Eco',
@@ -128,14 +118,13 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             formFields.deliveryTime === '' ||
             formFields.driverBreak === '' ||
             selectedVehicles.length === 0 ||
-            (numPendingPackages !== null && Number(numPendingPackages) === 0)
+            (numPendingPackages !== null && Number(numPendingPackages) === 0) ||
+            isLoading == true
         );
     };
 
-
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
-
 
         const scheduleProfile: ScheduleProfile = {
             selected_vehicles: selectedVehicles,
@@ -145,13 +134,19 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             driver_break: parseInt(formFields.driverBreak),
         };
 
-        console.log(scheduleProfile)
+        console.log(scheduleProfile);
 
-
+        // Call the handleScheduleDelivery function to process the schedule
         handleScheduleDelivery(scheduleProfile);
+
+        // Set the scheduling state to true
+        setIsScheduling(true);
+
+        // Wait for 1 second before closing the dialog
+        setTimeout(() => {
+            onOpenChange(false);
+        }, 1000);
     };
-
-
 
     return (
         <DialogContent className="sm:max-w-[425px]">
@@ -187,13 +182,13 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                 </div>
             </div>
 
-            {selectedVehicles.length === 0 && vehicles.length > 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
+            {isLoading == false && selectedVehicles.length === 0 && vehicles.length > 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
                 <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no vehicles selected</div>
             }
-            {vehicles.length === 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
+            {isLoading == false && vehicles.length === 0 && numPendingPackages !== null && Number(numPendingPackages) > 0 &&
                 <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no vehicles available</div>
             }
-            {numPendingPackages === 0 &&
+            {isLoading == false && numPendingPackages === 0 &&
                 <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no packages pending</div>
             }
 
@@ -211,7 +206,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                                 <div className="line-clamp-1 font-normal">{selectedVehicles.length} Selected</div>
                             }
                             {vehicles.length === 0 &&
-                                <div className="inline-flex gap-2 font-normal"><Loader2 size={18} className="animate-spin" /> Loading...</div>
+                                <div className="inline-flex gap-2 font-normal items-center"><Loader2 size={18} className="animate-spin" /> Loading...</div>
                             }
                         </Button>
                     </DropdownMenuTrigger>
@@ -315,11 +310,21 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             </div>
 
             <DialogFooter>
-                <Button type="submit"
-                    onClick={e => handleSubmit(e)}
-                    disabled={isSubmitDisabled()}>
-                    Schedule
-                </Button>
+                <>
+                    {isScheduling == false &&
+                        <Button type="submit"
+                            onClick={e => handleSubmit(e)}
+                            disabled={isSubmitDisabled()}>
+                            Schedule
+                        </Button>
+                    }
+                    {isScheduling == true &&
+                        <Button disabled className="border">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Scheduling
+                        </Button>
+                    }
+                </>
             </DialogFooter>
         </DialogContent>
     );
