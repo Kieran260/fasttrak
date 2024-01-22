@@ -3,14 +3,12 @@
 import { SetStateAction, useEffect, useState } from "react";
 import { columns } from "./components/columns"
 import { DataTable } from "./components/data-table"
-import { Package } from "@/types/package";
 import { DeliverySchedule, DeliveryStatus } from "@/types/delivery-schedule";
 import { supabase } from "@/pages/api/supabase-client";
 
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Loader, Loader2, SeparatorHorizontal } from "lucide-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { cn } from "@/lib/utils/utils"
 import { Button } from "@/components/ui/button"
@@ -20,7 +18,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { HiOutlineCog } from "react-icons/hi";
 import {
   Tooltip,
   TooltipContent,
@@ -28,32 +25,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-import {
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-
 
 import { createSchedules } from "@/lib/scheduling/create-schedules";
 import { createGraphAndSolutionFromScheduleArray } from "@/lib/scheduling/schedules-to-graph";
@@ -64,15 +40,6 @@ import { CytoscapeGraph } from "@/components/CytoscapeGraph";
 import { MdRefresh } from "react-icons/md"
 import { useRouter, useSearchParams } from "next/navigation";
 import { ScheduleDialogContent } from "./components/create-schedule-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FaSpinner } from "react-icons/fa";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import { Select } from "@/components/ui/select";
-import { BiSolidTruck } from "react-icons/bi";
-import { PiPackageBold } from "react-icons/pi";
-import { Vehicle } from "@/types/vehicle";
-import { UUID } from "crypto";
 import { ScheduleProfile } from "@/types/schedule-profile";
 
 export default function ScheduleDeliveries() {
@@ -425,7 +392,6 @@ export default function ScheduleDeliveries() {
                       Analysis
                     </Button>
                   </div>
-
                 </TooltipTrigger>
                 <TooltipContent>
                   {scheduleComplete == true && isScheduledToday == true &&
@@ -465,9 +431,6 @@ export default function ScheduleDeliveries() {
               </Tooltip>
 
               <div className="inline-flex">
-
-
-
                 <div>
                   <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
                     <DialogTrigger asChild>
@@ -590,8 +553,6 @@ export default function ScheduleDeliveries() {
                       </div>
                     </div>
 
-
-
                     <div>
                       <p className="text-muted-foreground text-sm mx-2 whitespace-nowrap">Driving Time / Vehicle</p>
                       <div className="flex items-end gap-1 mx-2 my-1">
@@ -608,8 +569,6 @@ export default function ScheduleDeliveries() {
                         </p>
                       </div>
                     </div>
-
-
 
                     <div>
                       <p className="text-muted-foreground text-sm mx-2 whitespace-nowrap">Driving Time / Package</p>
@@ -646,8 +605,6 @@ export default function ScheduleDeliveries() {
                       </div>
                     </div>
 
-
-
                     <div>
                       <p className="text-muted-foreground text-sm mx-2 whitespace-nowrap">Distance / Package</p>
                       <div className="flex items-end gap-1 mx-2 my-1">
@@ -663,15 +620,9 @@ export default function ScheduleDeliveries() {
                         <p className="text-lg font-semibold">miles</p>
                       </div>
                     </div>
-
-
-
-
                   </div>
                 </div>
-
               </div>
-
             </div>
           </div>
         }
