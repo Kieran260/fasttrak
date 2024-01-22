@@ -26,19 +26,13 @@ import { MdError, MdInfoOutline } from 'react-icons/md';
 import { db } from '@/lib/db/db';
 import { HiLightningBolt } from 'react-icons/hi';
 import { FaLeaf } from 'react-icons/fa';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip"
+
 
 interface ScheduleDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     date: Date | null;
     handleScheduleDelivery: (profile: ScheduleProfile) => void;
-    onReset: () => void;
 }
 
 export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
@@ -46,7 +40,6 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
     onOpenChange,
     open,
     handleScheduleDelivery,
-    onReset,
 }) => {
 
 
@@ -93,8 +86,6 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
             return () => clearTimeout(timer);
         }
     }, [open]);
-
-
 
     const handleCheckedChange = (vehicle: Vehicle, isChecked: boolean) => {
         if (isChecked) {
@@ -159,6 +150,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                 }
             </DialogHeader>
 
+            {/* Info */}
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-xs">
                 <div className="flex text-sm items-center gap-2 justify-center sm:justify-start">
                     <BiSolidTruck />
@@ -192,11 +184,10 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                 <div className="w-full flex gap-2 items-center text-sm text-red-500"><MdError />Unable to schedule, no packages pending</div>
             }
 
-
-
-
+            {/* Divider */}
             <div className="w-full border-t" />
 
+            {/* Form */}
             <div className="flex justify-between gap-4">
                 <Label className="my-auto justify-center line-clamp-1">Selected Vehicles</Label>
                 <DropdownMenu>

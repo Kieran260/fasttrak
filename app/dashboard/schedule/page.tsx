@@ -80,17 +80,6 @@ export default function ScheduleDeliveries() {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
 
-  const resetDialog = () => {
-    setDialogKey(prevKey => prevKey + 1);
-  }
-
-  // When opening the dialog, reset the dialog state
-  const openDialog = () => {
-    resetDialog();
-    setScheduleDialogOpen(true);
-  }
-
-
   // Date Handling
   const [date, setDate] = useState<Date | null>(null);
   const router = useRouter();
@@ -503,13 +492,11 @@ export default function ScheduleDeliveries() {
                       key={dialogKey}
                       open={scheduleDialogOpen}
                       onOpenChange={setScheduleDialogOpen}
-                      onReset={resetDialog}
                       date={date}
                       handleScheduleDelivery={handleScheduleDelivery}
                     />
                   </Dialog>
                 </div>
-
               </div>
             </div>
           </div>
