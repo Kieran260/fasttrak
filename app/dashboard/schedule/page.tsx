@@ -45,7 +45,6 @@ import { ScheduleProfile } from "@/types/schedule-profile";
 export default function ScheduleDeliveries() {
   // Dialog
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [dialogKey, setDialogKey] = useState(0);
 
   // Date Handling
   const [date, setDate] = useState<Date | null>(null);
@@ -192,22 +191,17 @@ export default function ScheduleDeliveries() {
     setIsLoading(true);
     setIsScheduling(true);
 
-
-    // fetch vehicles
-    //let vehicles = await db.vehicles.fetch.all();
     let vehicles = profile.selected_vehicles;
-    console.log(vehicles)
 
     // fetch packages 
     // TODO add to local profile object to prevent re-fetching
     let packages = await db.packages.fetch.pending();
-    console.log(packages)
 
     let deliverySchedule: DeliverySchedule[] = [];
     console.log("Scheduling for date:", date)
 
     if (vehicles && packages) {
-      const schedule = await createSchedules(vehicles, packages, date);
+      const schedule = await createSchedules(vehicles, packages, date, profile);
 
       if (schedule && schedule.length > 0) {
         deliverySchedule = schedule as DeliverySchedule[];
@@ -452,7 +446,6 @@ export default function ScheduleDeliveries() {
                       </>
                     </DialogTrigger>
                     <ScheduleDialogContent
-                      key={dialogKey}
                       open={scheduleDialogOpen}
                       onOpenChange={setScheduleDialogOpen}
                       date={date}

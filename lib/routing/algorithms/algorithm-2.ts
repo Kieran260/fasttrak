@@ -2,7 +2,7 @@ import { Package } from "@/types/package";
 import { Vehicle } from "@/types/vehicle";
 import { Graph, Node, Edge, createGraph, calculateDistance } from '../model/graph';
 import { VehicleRoute, VRPSolution } from '../model/vrp';
-import { estimateDuration } from "../../scheduling/create-schedules";
+import { calculateTraversalMins } from "../../scheduling/create-schedules";
 
 /***
  * Round Robin Allocation 2
@@ -52,12 +52,12 @@ export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], ti
         while (vehiclesChecked < availableVehicles.length) {
             const route = solution.routes[vehicleIndex] || new VehicleRoute(availableVehicles[vehicleIndex], graph.depot as Node);
             const travelCost = calculateDistance(route.nodes[route.nodes.length - 1], pkgGroup[0]);
-            const timeRequired = estimateDuration(travelCost);
+            const timeRequired = calculateTraversalMins(travelCost);
 
             if (route.canAddGroup(pkgGroup, timeRequired, timeWindow)) {
                 for (const pkgNode of pkgGroup) {
                     const travelCost = calculateDistance(route.nodes[route.nodes.length - 1], pkgNode);
-                    const timeRequired = estimateDuration(travelCost);
+                    const timeRequired = calculateTraversalMins(travelCost);
                     route.addNode(pkgNode, travelCost, timeRequired);
                 }
                 if (!solution.routes[vehicleIndex]) {

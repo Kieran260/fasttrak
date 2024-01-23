@@ -2,8 +2,9 @@ import { Package } from "@/types/package";
 import { Vehicle } from "@/types/vehicle";
 import { Graph, Node, Edge, createGraph, calculateDistance } from '../model/graph';
 import { VehicleRoute, VRPSolution } from '../model/vrp';
-import { estimateDuration } from "../../scheduling/create-schedules";
+import { calculateTraversalMins } from "../../scheduling/create-schedules";
 import { displayGraph } from "../../utils/cytoscape-data";
+import { ScheduleProfile } from "@/types/schedule-profile";
 
 /***
  * Round Robin Allocation 1
@@ -17,10 +18,14 @@ import { displayGraph } from "../../utils/cytoscape-data";
  * @param timeWindow Number of hours to deliver packages
  * @returns VRPSolution, results in the minimum required number of vehicles to service all packages
  */
-export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], timeWindow: number): Promise<VRPSolution> {
+export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], profile: ScheduleProfile): Promise<VRPSolution> {
 
     const solution = new VRPSolution();
     const availableVehicles = [...vehicles];
+
+    const timeWindow = profile.time_window;
+    const driverBreak = profile.driver_break;
+    const deliveryTime = profile.delivery_time;
 
     // Sort packages by date added (FIFO) and filter out depot node
     const sortedPackages = graph.nodes
@@ -37,8 +42,8 @@ export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], ti
         while (vehiclesChecked < availableVehicles.length) {
             const route = solution.routes[vehicleIndex] || new VehicleRoute(availableVehicles[vehicleIndex], graph.depot as Node);
             const travelCost = calculateDistance(route.nodes[route.nodes.length - 1], pkgNode);
-            const timeRequired = estimateDuration(travelCost);
-            if (route.canAddPackage(pkgNode.pkg as Package, pkgNode, timeRequired, timeWindow)) {
+            const timeRequired = calculateTraversalMins(travelCost, deliveryTime);
+            if (route.canAddPackage(pkgNode.pkg as Package, pkgNode, timeRequired, timeWindow, driverBreak)) {
                 route.addNode(pkgNode, travelCost, timeRequired);
                 if (!solution.routes[vehicleIndex]) {
                     solution.addRoute(route);

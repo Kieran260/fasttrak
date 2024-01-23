@@ -7,11 +7,12 @@ import { Edge, Graph, Node, calculateDistance, createGraph } from "../routing/mo
 import { VRPSolution, VehicleRoute } from "../routing/model/vrp";
 import { UUID } from "crypto";
 import axios from 'axios';
+import { ScheduleProfile } from "@/types/schedule-profile";
 
 // API Gateway endpoint URL
 const apiGatewayEndpoint = 'https://e266yv3o3eojn6auayc5za77c40pmdhb.lambda-url.eu-north-1.on.aws/';
 
-export async function createSchedules(vehiclesData: Vehicle[], packagesData: Package[], date: Date) {
+export async function createSchedules(vehiclesData: Vehicle[], packagesData: Package[], date: Date, profile: ScheduleProfile) {
     console.log("Scheduling packages...");
     if (packagesData.length === 0) {
         console.log("No packages to schedule.");
@@ -22,6 +23,9 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
         console.log("No vehicles to schedule.");
         return;
     }
+
+    // Profile
+    console.log("profile:", profile)
 
     // TODO: Get depot here, set to variable to be used in createGraph
     // Create a graph where each node represents a package, and each edge represents a delivery location
@@ -38,10 +42,10 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
     };
 
     let vrpSolution = new VRPSolution();
-    console.log("Contents:", vrpSolution)
-    console.log("data: ", data);
+
 
     // Make a POST request
+    /*
     await fetch(apiGatewayEndpoint, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -54,6 +58,7 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
         .catch(error => {
             console.error('Error:', error);
         });
+        */
 
     // If Lambda request fails, run algorithm locally
     // TODO: Add 30 second timeout for local processing
@@ -63,7 +68,7 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
             console.log("No packages to schedule.");
             return;
         }
-        vrpSolution = await geospatialClustering(graph, vehiclesData, 8)
+        vrpSolution = await geospatialClustering(graph, vehiclesData, profile)
         console.log("scheduling locally")
     }
 
@@ -81,7 +86,7 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
             start_time: date,
             status: DeliveryStatus.Scheduled,
             num_packages: route.nodes.length - 2, // minus 2 to exclude depot nodes
-            estimated_duration_mins: estimateDuration(route.totalCost),
+            estimated_duration_mins: route.totalTime, // TODO: Calculate real duration
             actual_duration_mins: 0,
             distance_miles: route.totalCost.toFixed(2) as unknown as number,
             load_weight: route.currentWeight,
@@ -96,8 +101,12 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
     return schedules;
 }
 
-// Function to estimate duration to travel from miles, average speed
-export function estimateDuration(distance: number): number {
+// Estimate duration based on distance and time to deliver each package
+export function calculateTraversalMins(distance: number): number {
     const averageSpeed = 8; // mph
-    return (distance / averageSpeed) * 60; // minutes
+
+    // estimated time to travel distance in minutes 
+    const estimatedDuration = (distance / averageSpeed) * 60;
+
+    return estimatedDuration; 
 }

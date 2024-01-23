@@ -25,7 +25,7 @@ import { OptimisationProfile, ScheduleProfile } from '@/types/schedule-profile';
 import { MdError, MdInfoOutline } from 'react-icons/md';
 import { db } from '@/lib/db/db';
 import { HiLightningBolt } from 'react-icons/hi';
-import { FaLeaf } from 'react-icons/fa';
+import { FaLeaf, FaTruck } from 'react-icons/fa';
 
 
 interface ScheduleDialogProps {
@@ -234,7 +234,7 @@ export const ScheduleDialogContent: React.FC<ScheduleDialogProps> = ({
                         <SelectGroup>
                             <SelectLabel>Optimisation</SelectLabel>
                             <SelectItem value="Eco"><div className="flex items-center gap-2">Economical<FaLeaf className="text-primary" /></div></SelectItem>
-                            <SelectItem value="Space"><div className="flex items-center gap-2">Load Utilisation<PiPackageBold /></div></SelectItem>
+                            <SelectItem value="Space"><div className="flex items-center gap-2">Load Utilisation<FaTruck /></div></SelectItem>
                             <SelectItem value="Time"><div className="flex items-center gap-2">Fastest Delivery<HiLightningBolt className="text-yellow-400" /></div></SelectItem>
                         </SelectGroup>
                     </SelectContent>

@@ -1,7 +1,7 @@
 import cytoscape from "cytoscape";
 import { Graph, calculateDistance } from "@/lib/routing/model/graph";
 import { VRPSolution } from "@/lib/routing/model/vrp";
-import { estimateDuration } from "@/lib/scheduling/create-schedules";
+import { calculateTraversalMins } from "@/lib/scheduling/create-schedules";
 
 interface CyEdge {
     data: {
@@ -88,7 +88,7 @@ export function displayGraph(graph: Graph, solution: VRPSolution) {
         route.nodes.slice(0, -1).forEach((node, i) => {
             const nextNode = route.nodes[i + 1];
             const edgeCost = calculateDistance(node, nextNode); // Calculating the distance between the two nodes
-            const minutesToTraverse = estimateDuration(edgeCost); // Estimating the minutes required to traverse the distance
+            const minutesToTraverse = calculateTraversalMins(edgeCost); // Estimating the minutes required to traverse the distance
             const routeName = `${minutesToTraverse.toFixed(2)} mins`;
             cyEdges.push({
                 data: {
