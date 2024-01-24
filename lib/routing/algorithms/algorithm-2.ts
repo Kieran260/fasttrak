@@ -3,6 +3,7 @@ import { Vehicle } from "@/types/vehicle";
 import { Graph, Node, Edge, createGraph, calculateDistance } from '../model/graph';
 import { VehicleRoute, VRPSolution } from '../model/vrp';
 import { calculateTraversalMins } from "../../scheduling/create-schedules";
+import { ScheduleProfile } from "@/types/schedule-profile";
 
 /***
  * Round Robin Allocation 2
@@ -17,10 +18,14 @@ import { calculateTraversalMins } from "../../scheduling/create-schedules";
  * @param timeWindow Number of hours to deliver packages
  * @returns VRPSolution, results in the minimum required number of vehicles to service all packages
  */
-export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], timeWindow: number): Promise<VRPSolution> {
+export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], profile: ScheduleProfile): Promise<VRPSolution> {
     
     const solution = new VRPSolution();
     const availableVehicles = [...vehicles];
+
+    const timeWindow = profile.time_window;
+    const driverBreak = profile.driver_break;
+    const deliveryTime = profile.delivery_time;
 
     // Sort packages by date added (FIFO) and filter out depot node
     const sortedPackages = graph.nodes
@@ -52,12 +57,12 @@ export async function roundRobinAllocation(graph: Graph, vehicles: Vehicle[], ti
         while (vehiclesChecked < availableVehicles.length) {
             const route = solution.routes[vehicleIndex] || new VehicleRoute(availableVehicles[vehicleIndex], graph.depot as Node);
             const travelCost = calculateDistance(route.nodes[route.nodes.length - 1], pkgGroup[0]);
-            const timeRequired = calculateTraversalMins(travelCost);
+            const timeRequired = calculateTraversalMins(travelCost) + deliveryTime;
 
-            if (route.canAddGroup(pkgGroup, timeRequired, timeWindow)) {
+            if (route.canAddGroup(pkgGroup, timeRequired, timeWindow, driverBreak)) {
                 for (const pkgNode of pkgGroup) {
                     const travelCost = calculateDistance(route.nodes[route.nodes.length - 1], pkgNode);
-                    const timeRequired = calculateTraversalMins(travelCost);
+                    const timeRequired = calculateTraversalMins(travelCost) + deliveryTime;
                     route.addNode(pkgNode, travelCost, timeRequired);
                 }
                 if (!solution.routes[vehicleIndex]) {

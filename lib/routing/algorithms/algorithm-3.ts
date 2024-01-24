@@ -48,7 +48,7 @@ export async function geospatialClustering(graph: Graph, vehicles: Vehicle[], pr
 
     // Step 3: Perform K-Means clustering to n clusters
     const clusterPriorityQueues = kMeans(mainQueue, numberOfClusters);
-    console.log("queues")
+
     // print length of each queue
     for (const queue of clusterPriorityQueues) {
         console.log(queue.getData().length);

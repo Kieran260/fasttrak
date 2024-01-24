@@ -34,6 +34,8 @@ export async function createSchedules(vehiclesData: Vehicle[], packagesData: Pac
     // Run the VRP algorithm to generate a solution
     //const vrpSolution = await geospatialClustering(graph, vehiclesData, 8);
 
+
+    // TODO: update lambda code to accept profile
     // schedule packages on AWS Lambda
     const data = {
         packages: packagesData,
